@@ -13,6 +13,9 @@ st.set_page_config(
 inject_custom_css()
 ensure_initialized()
 
+from components.auth_widget import render_sidebar_auth_widget
+render_sidebar_auth_widget()
+
 st.markdown("""
 <div class="brand-header">
     <a href="#" class="brand-logo">📚 BookLover</a>

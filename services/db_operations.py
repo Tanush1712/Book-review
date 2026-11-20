@@ -322,8 +322,14 @@ def like_review(review_id: int):
 # --- Shelving Operations ---
 
 def get_current_user():
+    import streamlit as st
+    user_id = st.session_state.get("logged_in_user_id")
     with SessionLocal() as db:
-        return db.query(User).filter_by(username="tanush_reader").first()
+        if user_id:
+            user = db.query(User).filter_by(id=user_id).first()
+            if user:
+                return user
+        return db.query(User).filter_by(username="tanush_reader").first() or db.query(User).first()
 
 
 def get_user_shelves_with_counts(user_id: int):

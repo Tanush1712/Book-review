@@ -13,6 +13,10 @@ st.set_page_config(
 
 inject_custom_css()
 ensure_initialized()
+
+from components.auth_widget import render_sidebar_auth_widget
+render_sidebar_auth_widget()
+
 current_user = get_current_user()
 
 st.markdown("""

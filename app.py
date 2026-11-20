@@ -12,6 +12,9 @@ st.set_page_config(
 inject_custom_css()
 ensure_initialized()
 
+from components.auth_widget import render_sidebar_auth_widget
+render_sidebar_auth_widget()
+
 # Top Navigation / Brand
 st.markdown("""
 <div class="brand-header">

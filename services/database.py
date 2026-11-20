@@ -30,6 +30,8 @@ class User(Base):
     avatar_url = Column(String(500), default="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150")
     bio = Column(Text, default="Passionate bookworm & avid reader 📚")
     reading_goal = Column(Integer, default=30)  # Annual reading challenge goal
+    password_hash = Column(String(255), nullable=True)
+    auth_provider = Column(String(50), default="local")  # local, google, github, apple
     created_at = Column(DateTime, default=datetime.utcnow)
 
     shelves = relationship("Shelf", back_populates="user", cascade="all, delete-orphan")
@@ -118,3 +120,19 @@ class Review(Base):
 
 def init_db():
     Base.metadata.create_all(bind=engine)
+    # Reliable SQLite column migrations for existing tables
+    try:
+        import sqlite3
+        if DB_PATH and os.path.exists(DB_PATH):
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+            cursor.execute("PRAGMA table_info(users)")
+            existing_cols = [row[1] for row in cursor.fetchall()]
+            if "password_hash" not in existing_cols:
+                cursor.execute("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255)")
+            if "auth_provider" not in existing_cols:
+                cursor.execute("ALTER TABLE users ADD COLUMN auth_provider VARCHAR(50) DEFAULT 'local'")
+            conn.commit()
+            conn.close()
+    except Exception as e:
+        print(f"Migration note: {e}")

@@ -154,5 +154,48 @@ def inject_custom_css():
         border-radius: 6px;
         font-weight: 500;
     }
+
+    /* Auth & Login Card Styling */
+    .auth-container {
+        background: #FFFFFF;
+        border: 1px solid #EAE8E2;
+        border-radius: 12px;
+        padding: 28px 32px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+        margin: 10px 0 25px 0;
+    }
+
+    /* Password Strength Meter */
+    .strength-meter-bg {
+        background: #EFEFEA;
+        height: 8px;
+        border-radius: 4px;
+        overflow: hidden;
+        margin: 8px 0 12px 0;
+    }
+    .strength-meter-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.3s ease, background-color 0.3s ease;
+    }
+
+    /* SSO Button Cards */
+    .sso-badge {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #FFFFFF;
+        border: 1px solid #D5D3CC;
+        border-radius: 8px;
+        padding: 10px 16px;
+        margin-bottom: 10px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.2s ease, border-color 0.2s ease;
+    }
+    .sso-badge:hover {
+        background: #F7F6F2;
+        border-color: #397858;
+    }
     </style>
     """, unsafe_allow_html=True)
