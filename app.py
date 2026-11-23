@@ -45,14 +45,17 @@ if never_never:
         
         st.write((never_never.description or "")[:280] + "...")
         
-        btn_col1, btn_col2 = st.columns([1, 2])
+        btn_col1, btn_col2, btn_col3 = st.columns([1.2, 1, 1.2])
         with btn_col1:
             if st.button("Explore Book Details Page →", type="primary", use_container_width=True):
                 st.session_state["selected_book_id"] = never_never.id
                 st.switch_page("pages/1_📖_Book_Details.py")
         with btn_col2:
-            if st.button("🔍 Search Catalog", use_container_width=False):
+            if st.button("🔍 Search Catalog", use_container_width=True):
                 st.switch_page("pages/2_🔍_Search_Discover.py")
+        with btn_col3:
+            if st.button("🤖 Chat with AI", use_container_width=True):
+                st.switch_page("pages/5_🤖_AI_Assistant.py")
 
 st.markdown("<hr style='border: none; border-top: 1px solid #ECEAE4; margin: 30px 0;'>", unsafe_allow_html=True)
 
