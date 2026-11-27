@@ -9,7 +9,8 @@ from components.styles import inject_custom_css
 st.set_page_config(
     page_title="Account & Authentication - BookLover",
     page_icon="🔐",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed" if not st.session_state.get("logged_in_user_id") else "auto"
 )
 
 inject_custom_css()
@@ -25,6 +26,14 @@ st.markdown("""
 # Check active user status
 current_user = get_current_user()
 is_custom_logged_in = "logged_in_user_id" in st.session_state and st.session_state["logged_in_user_id"] is not None
+
+if not is_custom_logged_in:
+    st.markdown("""
+    <style>
+        [data-testid="stSidebar"] { display: none; }
+        [data-testid="collapsedControl"] { display: none; }
+    </style>
+    """, unsafe_allow_html=True)
 
 # If user is actively logged in, display active profile card with logout
 if is_custom_logged_in and current_user:
@@ -46,12 +55,15 @@ if is_custom_logged_in and current_user:
     </div>
     """, unsafe_allow_html=True)
 
-    btn_col1, btn_col2, btn_col3 = st.columns([1, 1, 1])
+    btn_col0, btn_col1, btn_col2, btn_col3 = st.columns([1, 1, 1, 1])
+    with btn_col0:
+        if st.button("🏠 Homepage", type="primary", use_container_width=True):
+            st.switch_page("views/home.py")
     with btn_col1:
-        if st.button("📚 Go to My Bookshelf", use_container_width=True):
+        if st.button("📚 My Bookshelf", use_container_width=True):
             st.switch_page("pages/3_📚_My_Books.py")
     with btn_col2:
-        if st.button("👤 View Full Profile", use_container_width=True):
+        if st.button("👤 Full Profile", use_container_width=True):
             st.switch_page("pages/4_👤_Profile.py")
     with btn_col3:
         if st.button("🚪 Sign Out", type="secondary", use_container_width=True):
@@ -96,7 +108,6 @@ with tabs[0]:
                 if success:
                     st.session_state["logged_in_user_id"] = user.id
                     st.session_state["logged_in_user_name"] = user.display_name
-                    st.success(msg)
                     st.rerun()
                 else:
                     st.error(msg)
@@ -109,7 +120,6 @@ with tabs[0]:
             if demo_user:
                 st.session_state["logged_in_user_id"] = demo_user.id
                 st.session_state["logged_in_user_name"] = demo_user.display_name
-                st.success("Logged in as Demo User!")
                 st.rerun()
 
 
@@ -218,8 +228,6 @@ with tabs[1]:
             if success:
                 st.session_state["logged_in_user_id"] = new_user.id
                 st.session_state["logged_in_user_name"] = new_user.display_name
-                st.success(msg)
-                st.balloons()
                 st.rerun()
             else:
                 st.error(msg)
@@ -255,7 +263,6 @@ with tabs[2]:
             if success:
                 st.session_state["logged_in_user_id"] = user.id
                 st.session_state["logged_in_user_name"] = user.display_name
-                st.success(msg)
                 st.rerun()
 
     with col_gh:
@@ -268,7 +275,6 @@ with tabs[2]:
             if success:
                 st.session_state["logged_in_user_id"] = user.id
                 st.session_state["logged_in_user_name"] = user.display_name
-                st.success(msg)
                 st.rerun()
 
     with col_ap:
@@ -281,7 +287,6 @@ with tabs[2]:
             if success:
                 st.session_state["logged_in_user_id"] = user.id
                 st.session_state["logged_in_user_name"] = user.display_name
-                st.success(msg)
                 st.rerun()
 
     # Enterprise / Custom SSO with SSO Password Option
@@ -311,7 +316,6 @@ with tabs[2]:
                 if success:
                     st.session_state["logged_in_user_id"] = user.id
                     st.session_state["logged_in_user_name"] = user.display_name
-                    st.success(msg)
                     st.rerun()
 
 st.markdown("</div>", unsafe_allow_html=True)

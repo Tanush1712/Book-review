@@ -30,7 +30,7 @@ book = get_book(st.session_state["selected_book_id"])
 if not book:
     st.error("Book not found.")
     if st.button("← Back to Catalog"):
-        st.switch_page("app.py")
+        st.switch_page("views/home.py")
     st.stop()
 
 # Top Brand Header
@@ -96,6 +96,7 @@ with col_left:
         st.link_button("🛒 Buy", "https://www.amazon.com", use_container_width=True)
 
     if st.button("🤖 Ask AI About This Book", use_container_width=True):
+        st.session_state["ai_book_id"] = book.id
         st.session_state["queued_prompt"] = f"Tell me more about '{book.title}' by {book.authors}. What are its main tropes, mood, pacing, and who would enjoy it most?"
         st.switch_page("pages/5_🤖_AI_Assistant.py")
 

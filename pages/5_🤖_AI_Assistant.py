@@ -5,6 +5,8 @@ from services.ai_chat_service import (
 )
 from components.styles import inject_custom_css
 from components.auth_widget import render_sidebar_auth_widget
+from services.book_cover_utils import get_book_covers_from_response
+from services.book_api import import_book_to_db
 
 st.set_page_config(
     page_title="AI Book Assistant - BookLover",
@@ -159,11 +161,35 @@ user_prompt = None
 if "queued_prompt" in st.session_state and st.session_state["queued_prompt"]:
     user_prompt = st.session_state.pop("queued_prompt")
 
+
+def _render_book_covers(book_covers, msg_key_prefix: str):
+    """Displays visual book cover cards below an assistant message."""
+    if not book_covers:
+        return
+    st.markdown("---")
+    st.markdown("**📖 Book Covers & Quick Access:**")
+    cover_cols = st.columns(min(len(book_covers), 4))
+    for idx, book_info in enumerate(book_covers):
+        with cover_cols[idx % min(len(book_covers), 4)]:
+            st.image(book_info["cover_url"], width=130)
+            st.markdown(f"**{book_info['title']}**")
+            st.caption(f"by {book_info['authors']}")
+            if book_info.get("year"):
+                st.caption(f"Published: {book_info['year']}")
+            if st.button("View Book →", key=f"ai_cover_{msg_key_prefix}_{idx}", use_container_width=True):
+                target_id = book_info.get("book_id") or import_book_to_db(book_info)
+                if target_id:
+                    st.session_state["selected_book_id"] = target_id
+                    st.switch_page("pages/1_📖_Book_Details.py")
+
+
 # 6. Render Existing Chat Messages
-for msg in st.session_state["ai_messages"]:
+for msg_idx, msg in enumerate(st.session_state["ai_messages"]):
     avatar = "👤" if msg["role"] == "user" else "📚"
     with st.chat_message(msg["role"], avatar=avatar):
         st.markdown(msg["content"])
+        if msg["role"] == "assistant" and msg.get("covers"):
+            _render_book_covers(msg["covers"], f"hist_{msg_idx}")
 
 # 7. Chat Input
 typed_prompt = st.chat_input("Ask for recommendations, compare books, analyze themes, or request spoiler-free reviews...")
@@ -185,9 +211,11 @@ if user_prompt:
             for m in st.session_state["ai_messages"]
         ]
         
+        active_book_id = st.session_state.get("ai_book_id") or st.session_state.get("selected_book_id")
         generator = stream_chat_completion(
             messages=api_messages,
             user=current_user,
+            book_id=active_book_id,
             api_key=get_api_key(),
             model=selected_model,
             temperature=temperature
@@ -195,5 +223,16 @@ if user_prompt:
         
         full_response = st.write_stream(generator)
 
-    # Save assistant response to session
-    st.session_state["ai_messages"].append({"role": "assistant", "content": full_response})
+        # Extract and display book covers mentioned in the response
+        with st.spinner("📚 Finding book covers..."):
+            book_covers = get_book_covers_from_response(full_response, user_prompt=user_prompt)
+
+        new_msg_idx = len(st.session_state["ai_messages"])
+        _render_book_covers(book_covers, f"live_{new_msg_idx}")
+
+    # Save assistant response and covers to session
+    st.session_state["ai_messages"].append({
+        "role": "assistant",
+        "content": full_response,
+        "covers": book_covers
+    })

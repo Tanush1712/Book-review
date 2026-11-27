@@ -2,6 +2,13 @@ import json
 from datetime import datetime
 from sqlalchemy.orm import Session
 from services.database import SessionLocal, init_db, User, Book, Shelf, ShelfItem, Review
+from services.genre_utils import (
+    extract_query_genres,
+    normalize_genre_token,
+    normalize_text,
+    parse_book_genres,
+    score_genre_match,
+)
 
 
 def get_db():
@@ -232,14 +239,75 @@ def get_all_books(limit: int = 50):
 
 
 def search_local_books(query_str: str):
+    if not query_str or not query_str.strip():
+        return []
+
+    raw_q = query_str.strip()
+    norm_q = normalize_text(raw_q)
+    norm_genre_q = normalize_genre_token(raw_q)
+
     with SessionLocal() as db:
-        search_pattern = f"%{query_str}%"
-        return db.query(Book).filter(
-            (Book.title.ilike(search_pattern)) |
-            (Book.authors.ilike(search_pattern)) |
-            (Book.genres.ilike(search_pattern)) |
-            (Book.isbn13.ilike(search_pattern))
-        ).all()
+        books = db.query(Book).all()
+
+        # Gather normalized genres present in the database for dynamic multi-genre detection
+        db_genre_vocab = set()
+        parsed_by_id = {}
+        for b in books:
+            b_genres = parse_book_genres(b.genres or "")
+            parsed_by_id[b.id] = b_genres
+            db_genre_vocab.update(b_genres)
+
+        query_genres, is_genre_query = extract_query_genres(
+            raw_q, extra_known_genres=db_genre_vocab
+        )
+
+        scored = []
+        for b in books:
+            title_norm = normalize_text(b.title or "")
+            authors_norm = normalize_text(b.authors or "")
+            isbn_norm = (b.isbn13 or "").lower().strip()
+            b_genres = parsed_by_id.get(b.id, [])
+
+            direct_score = 0
+            if norm_q and (
+                norm_q in title_norm
+                or norm_q in authors_norm
+                or (isbn_norm and norm_q in isbn_norm)
+            ):
+                direct_score += 5
+
+            matched_genres = 0
+            genre_score = 0
+
+            if query_genres:
+                for qg in query_genres:
+                    s = score_genre_match(qg, b_genres)
+                    if s > 0:
+                        matched_genres += 1
+                        genre_score += s
+                    elif not is_genre_query and qg in authors_norm:
+                        direct_score += 2
+            elif norm_genre_q:
+                s = score_genre_match(norm_genre_q, b_genres)
+                if s > 0:
+                    matched_genres += 1
+                    genre_score += s
+                elif any(norm_genre_q in bg for bg in b_genres):
+                    matched_genres += 1
+                    genre_score += 1
+
+            # Also allow partial substring match inside normalized genres when no exact token hit
+            if genre_score == 0 and norm_genre_q and not query_genres:
+                if any(norm_genre_q in bg for bg in b_genres):
+                    matched_genres = 1
+                    genre_score = 1
+
+            total_score = direct_score + genre_score
+            if total_score > 0:
+                scored.append((matched_genres, total_score, b.average_rating or 0.0, b))
+
+        scored.sort(key=lambda item: (item[0], item[1], item[2]), reverse=True)
+        return [item[3] for item in scored]
 
 
 def get_reviews_for_book(book_id: int, star_filter: float = None, sort_by: str = "Most Helpful"):

@@ -65,7 +65,22 @@ if query:
             online_results = search_books_online(query, limit=12)
         
         if not online_results:
-            st.info("No books found online for this query. Try a different title or author.")
+            local_fallback = search_local_books(query)
+            if local_fallback:
+                st.caption(f"Showing {len(local_fallback)} matching book(s) from your local catalog")
+                cols = st.columns(min(4, max(1, len(local_fallback))))
+                for idx, b in enumerate(local_fallback):
+                    with cols[idx % 4]:
+                        render_book_card(
+                            book_id=b.id,
+                            title=b.title,
+                            authors=b.authors,
+                            cover_url=b.cover_image_url or "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300",
+                            rating=b.average_rating,
+                            button_key=f"search_fallback_{b.id}"
+                        )
+            else:
+                st.info("No books found online for this query. Try a different title, author, or genre.")
         else:
             st.caption(f"Found {len(online_results)} matching books from Open Library")
             grid_cols = st.columns(4)
